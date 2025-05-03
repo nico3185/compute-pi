@@ -14,6 +14,13 @@ RUN apk add --no-cache \
     make \
     && pip install --no-cache-dir --upgrade pip wheel
 
+# Copy project files first to install dependencies
+COPY pyproject.toml README.md ./
+COPY compute_pi ./compute_pi
+
+# Install the package and its dependencies
+RUN pip install --no-cache-dir -e .
+
 # Install dev tools
 RUN pip install --no-cache-dir \
     black \
@@ -26,8 +33,10 @@ RUN pip install --no-cache-dir \
     types-tqdm \
     types-psutil
 
-# Copy project files
-COPY . .
+# Copy the rest of the project files
+COPY tests ./tests
+COPY benchmarks ./benchmarks
+COPY Makefile ./
 
 # Run make check by default
 CMD ["make", "check"] 
