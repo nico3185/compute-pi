@@ -35,7 +35,7 @@ clean:
 lint: lint-flake8 lint-mypy
 
 lint-flake8:
-	flake8 $(PACKAGE_NAME) tests benchmarks
+	flake8 --config=.flake8 $(PACKAGE_NAME) tests benchmarks
 
 lint-mypy:
 	mypy .

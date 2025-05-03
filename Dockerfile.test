@@ -14,8 +14,8 @@ RUN apk add --no-cache \
     make \
     && pip install --no-cache-dir --upgrade pip wheel
 
-# Copy project files first to install dependencies
-COPY pyproject.toml README.md ./
+# Copy configuration files first
+COPY pyproject.toml README.md .flake8 ./
 COPY compute_pi ./compute_pi
 
 # Install the package and its dependencies
