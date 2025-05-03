@@ -23,7 +23,7 @@ Installation
 
 .. code-block:: bash
 
-   pip install compute-pi
+   uv pip install compute-pi
 
 Basic Usage
 ^^^^^^^^^^

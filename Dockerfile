@@ -16,21 +16,15 @@ RUN apk add --no-cache \
     libffi-dev \
     openssl-dev \
     curl \
-    && pip install --no-cache-dir --upgrade pip wheel \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.profile \
-    && source ~/.profile
+    && cp /root/.local/bin/uv /usr/local/bin/uv
 
 # Copy only the necessary files
 COPY pyproject.toml README.md ./
 COPY compute_pi ./compute_pi
 
 # Build the wheel
-RUN if command -v uv >/dev/null 2>&1; then \
-        uv pip wheel --wheel-dir=/app/wheels -e .; \
-    else \
-        pip wheel --no-cache-dir --wheel-dir=/app/wheels -e .; \
-    fi
+RUN export PATH=/root/.cargo/bin:$PATH && uv pip wheel --system --wheel-dir=/app/wheels -e .
 
 FROM python:3.9-alpine AS dev
 WORKDIR /app
@@ -38,8 +32,7 @@ WORKDIR /app
 # Install runtime dependencies and uv
 RUN apk add --no-cache libffi curl \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.profile \
-    && source ~/.profile
+    && cp /root/.local/bin/uv /usr/local/bin/uv
 
 # Copy project files
 COPY --from=builder /app /app
@@ -47,13 +40,8 @@ COPY tests ./tests
 COPY benchmarks ./benchmarks
 
 # Install from wheel with dev dependencies
-RUN if command -v uv >/dev/null 2>&1; then \
-        uv pip install --upgrade pip && \
-        uv pip install --find-links=/app/wheels ".[dev]"; \
-    else \
-        pip install --no-cache-dir --upgrade pip && \
-        pip install --no-cache-dir --find-links=/app/wheels ".[dev]"; \
-    fi && \
+RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system --upgrade pip && \
+    uv pip install --system --find-links=/app/wheels ".[dev]" && \
     pytest tests/
 
 FROM python:3.9-alpine AS prod
@@ -67,18 +55,12 @@ LABEL org.opencontainers.image.licenses=MIT
 # Install runtime dependencies and uv
 RUN apk add --no-cache libffi curl \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.profile \
-    && source ~/.profile
+    && cp /root/.local/bin/uv /usr/local/bin/uv
 
 # Copy only the wheel and install
 COPY --from=builder /app/wheels /wheels
-RUN if command -v uv >/dev/null 2>&1; then \
-        uv pip install --upgrade pip && \
-        uv pip install --no-index --find-links=/wheels compute-pi; \
-    else \
-        pip install --no-cache-dir --upgrade pip && \
-        pip install --no-cache-dir --no-index --find-links=/wheels compute-pi; \
-    fi && \
+RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system --upgrade pip && \
+    uv pip install --system --no-index --find-links=/wheels compute-pi && \
     rm -rf /wheels
 
 # Set Python to run in unbuffered mode (recommended for containers)

@@ -22,12 +22,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv pip install compute-pi
 ```
 
-### Using pip (Alternative)
-
-```bash
-pip install compute-pi
-```
-
 ### Using Docker
 
 ```bash
@@ -49,9 +43,6 @@ cd compute-pi
 
 # Using uv (recommended)
 uv pip install -e .
-
-# Using pip (alternative)
-# pip install -e .
 ```
 
 ## Usage
