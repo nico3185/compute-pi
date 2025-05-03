@@ -1,16 +1,16 @@
 """Tests for the command-line interface."""
 
-import sys
 import logging
 import os
+import sys
 from io import StringIO
 from unittest.mock import MagicMock, patch
 
 import pytest
 from tqdm.auto import tqdm
 
-from compute_pi.main import create_progress_bar, main, progress_callback, is_non_interactive
 from compute_pi.logger import TqdmLoggingHandler
+from compute_pi.main import create_progress_bar, is_non_interactive, main
 
 
 def test_create_progress_bar():

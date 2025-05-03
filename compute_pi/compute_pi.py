@@ -2,10 +2,11 @@
 
 import os
 import sys
-from typing import Optional
-from mpmath import mp
-from time import time
 from dataclasses import dataclass
+from time import time
+from typing import Any, Callable, Dict, Optional
+
+from mpmath import mp
 
 from .logger import logger
 
@@ -18,7 +19,7 @@ class PiComputationResult:
     computation_time: float
     precision: int
     correct_digits: int
-    debug_info: dict
+    debug_info: Dict[str, Any]
 
     def __str__(self) -> str:
         """Return a string representation of the result."""
@@ -59,7 +60,9 @@ class PiCalculator:
         logger.debug(f"Binary precision set to {mp.prec}")
 
     def compute_pi(
-        self, precision: Optional[int] = None, progress_callback: Optional[callable] = None
+        self,
+        precision: Optional[int] = None,
+        progress_callback: Optional[Callable[[float], None]] = None,
     ) -> PiComputationResult:
         """
         Compute π using the Chudnovsky algorithm.

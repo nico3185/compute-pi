@@ -4,7 +4,6 @@ import os
 from unittest.mock import patch
 
 import pytest
-from mpmath import mp
 
 from compute_pi import PiCalculator
 

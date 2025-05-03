@@ -1,14 +1,15 @@
 """Command-line interface for π calculation."""
 
 import argparse
+import logging
 import os
 import sys
 from typing import Optional
-import logging
 
 from tqdm.auto import tqdm
 
 from compute_pi import PiCalculator
+
 from .logger import logger, setup_logger
 
 

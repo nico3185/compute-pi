@@ -1,6 +1,7 @@
 """Performance benchmarks for π calculation."""
 
 import pytest
+
 from compute_pi import PiCalculator
 
 
@@ -64,8 +65,9 @@ def test_result_validation(benchmark):
 )
 def test_memory_usage(benchmark):
     """Benchmark memory usage during calculation."""
-    import psutil
     import os
+
+    import psutil
 
     def measure_calculation():
         process = psutil.Process(os.getpid())

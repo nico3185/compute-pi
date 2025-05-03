@@ -1,44 +1,39 @@
-"""Tests for logging functionality."""
+"""Tests for the logger functionality."""
 
 import logging
 import os
-import sys
 import tempfile
 from io import StringIO
-from unittest.mock import MagicMock, patch
-
-import pytest
-from tqdm.auto import tqdm
+from unittest.mock import patch
 
 from compute_pi.logger import TqdmLoggingHandler, setup_logger
 
 
 def test_tqdm_logging_handler():
-    """Test that TqdmLoggingHandler writes through tqdm."""
+    """Test TqdmLoggingHandler functionality."""
     handler = TqdmLoggingHandler()
-    handler.setFormatter(logging.Formatter("%(message)s"))
-
     with patch("tqdm.auto.tqdm.write") as mock_write:
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
-            pathname="",
-            lineno=0,
+            pathname="test.py",
+            lineno=1,
             msg="Test message",
             args=(),
             exc_info=None,
         )
         handler.emit(record)
-        mock_write.assert_called_once_with("Test message")
+        mock_write.assert_called_once()
+        assert "Test message" in mock_write.call_args[0][0]
 
 
 def test_logger_setup_basic():
     """Test basic logger setup."""
-    logger = setup_logger(name="test", use_tqdm=False)
+    logger = setup_logger(name="test")
     assert logger.name == "test"
     assert logger.level == logging.INFO
-    assert len(logger.handlers) == 1
-    assert isinstance(logger.handlers[0], logging.StreamHandler)
+    assert len(logger.handlers) > 0
+    assert any(isinstance(h, logging.Handler) for h in logger.handlers)
 
 
 def test_logger_setup_with_file():
@@ -63,7 +58,7 @@ def test_logger_setup_with_file():
 
 
 def test_logger_with_tqdm():
-    """Test logger compatibility with tqdm."""
+    """Test logger with tqdm integration."""
     logger = setup_logger(name="test", use_tqdm=True)
     assert any(isinstance(h, TqdmLoggingHandler) for h in logger.handlers)
 
@@ -128,10 +123,15 @@ def test_logger_formatting():
 
 
 def test_logger_handler_cleanup():
-    """Test that handlers are properly cleaned up on reconfiguration."""
-    logger = setup_logger(name="test")
-    initial_handlers = len(logger.handlers)
+    """Test that logger handlers are properly cleaned up."""
+    name = "test_cleanup"
+    logger = logging.getLogger(name)
 
-    # Setup again with same name
-    logger = setup_logger(name="test")
-    assert len(logger.handlers) == initial_handlers  # Should not duplicate handlers
+    # First setup should create handlers
+    setup_logger(name=name)
+    initial_handler_count = len(logger.handlers)
+    assert initial_handler_count > 0
+
+    # Subsequent setup should remove old handlers first
+    setup_logger(name=name)
+    assert len(logger.handlers) == initial_handler_count

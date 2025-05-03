@@ -2,7 +2,8 @@
 
 import logging
 import sys
-from typing import Optional
+from typing import Optional, Union, cast
+
 from tqdm.auto import tqdm
 
 
@@ -29,6 +30,7 @@ def setup_logger(
     level: int = logging.INFO,
     log_file: Optional[str] = None,
     use_tqdm: bool = True,
+    simple_format: bool = False,
 ) -> logging.Logger:
     """
     Configure and return a logger instance.
@@ -38,6 +40,7 @@ def setup_logger(
         level: Logging level (default: INFO)
         log_file: Optional file path for logging
         use_tqdm: Whether to use tqdm-compatible logging (default: True)
+        simple_format: Use simple message-only formatting (for tests)
 
     Returns:
         Configured logger instance
@@ -49,12 +52,16 @@ def setup_logger(
     logger.handlers = []
 
     # Create formatters
-    console_formatter = logging.Formatter("%(levelname)s: %(message)s")
+    if simple_format:
+        console_formatter = logging.Formatter("%(message)s")
+    else:
+        console_formatter = logging.Formatter("%(levelname)s: %(message)s")
+
     file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Console handler (using tqdm if requested)
     if use_tqdm:
-        console_handler = TqdmLoggingHandler()
+        console_handler: Union[TqdmLoggingHandler, logging.StreamHandler] = TqdmLoggingHandler()
     else:
         console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setFormatter(console_formatter)
@@ -68,8 +75,6 @@ def setup_logger(
             logger.addHandler(file_handler)
         except Exception as e:
             logger.error(f"Failed to setup file logging to {log_file}: {e}")
-            # Don't raise the error - continue with console logging only
-            pass
 
     return logger
 
