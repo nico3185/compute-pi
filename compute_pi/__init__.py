@@ -2,4 +2,4 @@
 
 from compute_pi.compute_pi import PiCalculator, PiComputationResult
 
-__all__ = ['PiCalculator', 'PiComputationResult']
+__all__ = ["PiCalculator", "PiComputationResult"]

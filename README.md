@@ -12,25 +12,31 @@ A high-precision π calculator using the Chudnovsky algorithm.
 
 ## Installation
 
-### Using pip
+### Using uv
 
 ```bash
-pip install compute-pi
+uv pip install compute-pi
 ```
 
 ### Using Docker
 
 ```bash
-docker pull compute-pi
-docker run compute-pi --precision 1000
+# Pull from GitHub Container Registry
+docker pull ghcr.io/user/compute-pi:latest
+
+# Run with default settings (1000 decimal places)
+docker run ghcr.io/user/compute-pi:latest
+
+# Run with custom precision
+docker run ghcr.io/user/compute-pi:latest --precision 2000
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/compute-pi.git
+git clone https://github.com/nico3185/compute-pi.git
 cd compute-pi
-pip install -e .
+uv pip install -e .
 ```
 
 ## Usage
@@ -75,7 +81,7 @@ print(calculator.format_result(result))
 
 ```bash
 # Install development dependencies
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 
 # Run tests
 pytest tests/
@@ -90,12 +96,72 @@ pytest tests/ --benchmark-only
 ### Docker Development
 
 ```bash
-# Build image
-docker build -t compute-pi .
+# Build and test using docker-compose
+make docker-build
+make docker-test
 
-# Run tests in container
-docker run compute-pi python -m pytest tests/
+# Run the application
+make docker-run
+
+# Push images to registry (GitHub Packages)
+make docker-push
 ```
+
+## Docker Registry
+
+This project uses GitHub Container Registry (ghcr.io) to publish Docker images. The following images are available:
+
+- `ghcr.io/user/compute-pi:latest` - Production image
+- `ghcr.io/user/compute-pi:dev` - Development image with testing tools
+
+To use your own registry:
+
+```bash
+# Set custom registry and username
+export DOCKER_REGISTRY=my-registry.com
+export DOCKER_USERNAME=myuser
+
+# Build and push
+make docker-build
+make docker-push
+```
+
+## CI/CD Pipeline
+
+This project includes a comprehensive CI/CD pipeline using GitHub Actions that:
+
+1. **Testing Stage**:
+   - Runs tests on multiple Python versions (3.8, 3.9, 3.10, 3.11)
+   - Checks code formatting with Black and isort
+   - Performs static type checking with mypy
+   - Performs linting with flake8
+   - Runs the test suite with coverage reporting
+
+2. **Docker Build Stage**:
+   - Builds production and development Docker images
+   - Pushes images to GitHub Container Registry (ghcr.io)
+   - Supports multi-platform builds (amd64)
+   - Performs vulnerability scanning with Trivy
+   - Uses build caching for faster builds
+
+3. **Deployment Stage**:
+   - Creates GitHub releases for tagged versions
+   - Publishes versioned Docker images
+
+### Creating a Release
+
+To create a new release:
+
+```bash
+# Create a new version tag and release
+make release
+
+# Or just tag the current version
+make tag-version
+git push origin v0.1.0  # Replace with your version
+```
+
+This will trigger the CI/CD pipeline to build and publish Docker images with appropriate version tags.
 
 ## License
 

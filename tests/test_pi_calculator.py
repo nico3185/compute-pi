@@ -1,7 +1,7 @@
 """Unit tests for the PiCalculator class."""
 
 import pytest
-from mpmath import mp
+from mpmath import mp  # type: ignore
 
 from compute_pi import PiCalculator, PiComputationResult
 

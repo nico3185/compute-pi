@@ -1,7 +1,13 @@
 """Performance benchmarks for π calculation."""
 
+import os
+from typing import Any, cast
+
+import psutil
 import pytest
+
 from compute_pi import PiCalculator
+from compute_pi.compute_pi import PiComputationResult
 
 
 @pytest.mark.benchmark(
@@ -10,12 +16,13 @@ from compute_pi import PiCalculator
     max_time=0.5,
 )
 @pytest.mark.parametrize("precision", [10, 100, 1000])
-def test_pi_calculation_precision(benchmark, precision):
+def test_pi_calculation_precision(benchmark: Any, precision: int) -> None:
     """Benchmark π calculation with different precision levels."""
-    def run_calculation():
+
+    def run_calculation() -> PiComputationResult:
         calculator = PiCalculator(precision=precision)
         return calculator.compute_pi()
-    
+
     result = benchmark(run_calculation)
     assert result.correct_digits >= precision
 
@@ -25,15 +32,16 @@ def test_pi_calculation_precision(benchmark, precision):
     min_rounds=3,
     max_time=0.5,
 )
-def test_pi_calculation_with_progress(benchmark):
+def test_pi_calculation_with_progress(benchmark: Any) -> None:
     """Benchmark π calculation with progress tracking."""
-    def progress_callback(p):
+
+    def progress_callback(p: float) -> None:
         pass  # Minimal overhead progress tracking
-    
-    def run_calculation():
+
+    def run_calculation() -> PiComputationResult:
         calculator = PiCalculator(precision=500)
         return calculator.compute_pi(progress_callback=progress_callback)
-    
+
     result = benchmark(run_calculation)
     assert result.correct_digits >= 500
 
@@ -43,14 +51,14 @@ def test_pi_calculation_with_progress(benchmark):
     min_rounds=3,
     max_time=0.5,
 )
-def test_result_validation(benchmark):
+def test_result_validation(benchmark: Any) -> None:
     """Benchmark result validation performance."""
     calculator = PiCalculator(precision=500)
     result = calculator.compute_pi()
-    
-    def validate():
+
+    def validate() -> int:
         return calculator._validate_result(result.value)
-    
+
     correct_digits = benchmark(validate)
     assert correct_digits >= 500
 
@@ -60,20 +68,20 @@ def test_result_validation(benchmark):
     min_rounds=3,
     max_time=0.5,
 )
-def test_memory_usage(benchmark):
+def test_memory_usage(benchmark: Any) -> None:
     """Benchmark memory usage during calculation."""
-    import psutil
-    import os
-    
-    def measure_calculation():
+
+    def measure_calculation() -> float:
         process = psutil.Process(os.getpid())
         mem_before = process.memory_info().rss
-        
+
         calculator = PiCalculator(precision=500)
         calculator.compute_pi()
-        
+
         mem_after = process.memory_info().rss
-        return (mem_after - mem_before) / 1024 / 1024  # MB
-    
-    mem_usage = benchmark(measure_calculation)
-    assert mem_usage > 0  # Should use some memory 
+        mem_usage = (mem_after - mem_before) / 1024 / 1024  # MB
+        return float(mem_usage)  # Explicitly cast to float
+
+    result = benchmark(measure_calculation)
+    mem_usage = cast(float, result)  # Cast the benchmark result to float
+    assert mem_usage > 0  # Should use some memory

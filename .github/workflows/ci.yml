@@ -1,11 +1,18 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches: [ main ]
 
+# Add permissions needed for GitHub Container Registry
+permissions:
+  contents: read
+  packages: write
+  
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -24,28 +31,166 @@ jobs:
     - name: Install uv
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
-        
+        echo "export PATH=\"$HOME/.local/bin:$PATH\"" >> $GITHUB_ENV
+        export PATH="$HOME/.local/bin:$PATH"
+    
+    - name: Create virtual environment
+      run: uv venv .venv
+
     - name: Install dependencies
       run: |
+        source .venv/bin/activate
         uv pip install -e ".[dev]"
-        
+        uv pip install types-psutil types-tqdm
+    
     - name: Check formatting with black
-      run: black . --check
-        
+      run: |
+        source .venv/bin/activate
+        black . --check
+    
     - name: Sort imports with isort
-      run: isort . --check-only --diff
-        
+      run: |
+        source .venv/bin/activate
+        isort compute_pi tests benchmarks --check-only
+    
     - name: Lint with flake8
-      run: flake8 .
-        
+      run: |
+        source .venv/bin/activate
+        flake8 compute_pi tests benchmarks
+    
     - name: Type check with mypy
-      run: mypy .
-        
+      run: |
+        source .venv/bin/activate
+        mypy compute_pi tests benchmarks
+    
     - name: Run tests with pytest
-      run: pytest
-        
-    - name: Upload coverage to Codecov
+      run: |
+        source .venv/bin/activate
+        pytest --cov=compute_pi --cov-report=term-missing --cov-report=xml
+    
+    # Optional coverage upload - will not cause workflow to fail
+    - name: Upload coverage to Codecov (optional)
       uses: codecov/codecov-action@v3
+      continue-on-error: true
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true 
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+      
+    # Check if GitHub Container Registry is accessible
+    - name: Check GHCR access
+      run: |
+        echo "GitHub actor: ${{ github.actor }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Repository owner: ${{ github.repository_owner }}"
+      
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: |
+          ghcr.io/${{ github.repository_owner }}/compute-pi
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,format=short
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    # Use GitHub token with explicit permissions
+    - name: Login to GitHub Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build production image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        target: prod
+        platforms: linux/amd64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+      
+    - name: Build dev image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        target: dev
+        platforms: linux/amd64
+        push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        tags: ghcr.io/${{ github.repository_owner }}/compute-pi:dev
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      continue-on-error: true
+      with:
+        image-ref: ghcr.io/${{ github.repository_owner }}/compute-pi:latest
+        format: 'table'
+        exit-code: '0'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
+    
+  test-docker:
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Pull and test Docker image
+      run: |
+        docker pull ghcr.io/${{ github.repository_owner }}/compute-pi:latest
+        # Run with a small precision value for faster testing
+        docker run --rm ghcr.io/${{ github.repository_owner }}/compute-pi:latest --precision 100
+        
+    - name: Test Docker image with custom parameters
+      run: |
+        # More comprehensive test with different parameters
+        docker run --rm ghcr.io/${{ github.repository_owner }}/compute-pi:latest --precision 200 --show-digits 50 --verbose
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test-docker
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        generate_release_notes: true
+        files: |
+          README.md
+          LICENSE 

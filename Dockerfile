@@ -17,4 +17,9 @@ RUN pip install --no-cache-dir .
 ENTRYPOINT ["compute-pi"]
 
 # Default command (can be overridden)
-CMD ["--precision", "1000"] 
+CMD ["--precision", "1000"]
+
+# Include labels for better identification
+LABEL org.opencontainers.image.source="https://github.com/user/compute_pi"
+LABEL org.opencontainers.image.description="Pi calculation using Chudnovsky algorithm"
+LABEL org.opencontainers.image.licenses="MIT" 

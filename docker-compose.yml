@@ -1,13 +1,10 @@
-version: '3.8'
-
 services:
   app:
     build:
       context: .
       target: prod
-    image: compute-pi:latest
+    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_USERNAME:-user}/compute-pi:latest
     container_name: compute-pi
-    command: compute-pi
     environment:
       - PYTHONUNBUFFERED=1
 
@@ -15,7 +12,7 @@ services:
     build:
       context: .
       target: dev
-    image: compute-pi:dev
+    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_USERNAME:-user}/compute-pi:dev
     container_name: compute-pi-dev
     volumes:
       - .:/app

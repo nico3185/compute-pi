@@ -26,6 +26,7 @@ wheels/
 env/
 venv/
 ENV/
+.venv-ci-test/
 
 # IDE
 .idea/
@@ -35,9 +36,12 @@ ENV/
 
 # Testing
 .coverage
+.coverage.*
 coverage.xml
 .pytest_cache/
 htmlcov/
+pytest_output.txt
+.benchmarks/
 
 # mypy
 .mypy_cache/
@@ -45,3 +49,11 @@ htmlcov/
 # Distribution
 dist/
 build/
+
+# UV
+uv.lock
+
+# Temporary files
+*.tmp
+*.log
+.DS_Store
