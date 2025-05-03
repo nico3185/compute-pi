@@ -8,7 +8,7 @@ import pytest
 from compute_pi import PiCalculator
 
 
-def test_minimum_precision():
+def test_minimum_precision() -> None:
     """Test computation with minimum valid precision."""
     calculator = PiCalculator(precision=1)
     result = calculator.compute_pi()
@@ -16,7 +16,7 @@ def test_minimum_precision():
     assert str(result.value).startswith("3.1")
 
 
-def test_maximum_precision():
+def test_maximum_precision() -> None:
     """Test computation with very high precision."""
     # Test with a reasonably high precision that won't take too long
     calculator = PiCalculator(precision=10000)
@@ -25,7 +25,7 @@ def test_maximum_precision():
     assert len(str(result.value)) > 10000
 
 
-def test_precision_validation():
+def test_precision_validation() -> None:
     """Test precision validation."""
     with pytest.raises(ValueError):
         PiCalculator(precision=0)
@@ -38,7 +38,7 @@ def test_precision_validation():
         calculator.compute_pi(precision=0)
 
 
-def test_result_formatting():
+def test_result_formatting() -> None:
     """Test result formatting with edge cases."""
     calculator = PiCalculator(precision=50)  # Reduced from 100
     result = calculator.compute_pi()
@@ -80,7 +80,7 @@ def test_result_formatting():
             assert str(result.correct_digits) in formatted
 
 
-def test_precision_override_edge_cases():
+def test_precision_override_edge_cases() -> None:
     """Test precision override edge cases."""
     calculator = PiCalculator(precision=1000)
 
@@ -99,7 +99,7 @@ def test_precision_override_edge_cases():
     assert result3.correct_digits >= 2000
 
 
-def test_string_representation():
+def test_string_representation() -> None:
     """Test string representation of PiComputationResult."""
     calculator = PiCalculator(precision=10)
     result = calculator.compute_pi()

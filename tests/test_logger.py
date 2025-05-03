@@ -4,12 +4,14 @@ import logging
 import os
 import tempfile
 from io import StringIO
+from logging import Formatter
+from typing import Optional
 from unittest.mock import patch
 
 from compute_pi.logger import TqdmLoggingHandler, setup_logger
 
 
-def test_tqdm_logging_handler():
+def test_tqdm_logging_handler() -> None:
     """Test TqdmLoggingHandler functionality."""
     handler = TqdmLoggingHandler()
     with patch("tqdm.auto.tqdm.write") as mock_write:
@@ -27,7 +29,7 @@ def test_tqdm_logging_handler():
         assert "Test message" in mock_write.call_args[0][0]
 
 
-def test_logger_setup_basic():
+def test_logger_setup_basic() -> None:
     """Test basic logger setup."""
     logger = setup_logger(name="test")
     assert logger.name == "test"
@@ -36,7 +38,7 @@ def test_logger_setup_basic():
     assert any(isinstance(h, logging.Handler) for h in logger.handlers)
 
 
-def test_logger_setup_with_file():
+def test_logger_setup_with_file() -> None:
     """Test logger setup with file output."""
     with tempfile.NamedTemporaryFile(delete=False) as temp:
         try:
@@ -57,7 +59,7 @@ def test_logger_setup_with_file():
             os.unlink(temp.name)
 
 
-def test_logger_with_tqdm():
+def test_logger_with_tqdm() -> None:
     """Test logger with tqdm integration."""
     logger = setup_logger(name="test", use_tqdm=True)
     assert any(isinstance(h, TqdmLoggingHandler) for h in logger.handlers)
@@ -67,7 +69,7 @@ def test_logger_with_tqdm():
         mock_write.assert_called_once()
 
 
-def test_logger_levels():
+def test_logger_levels() -> None:
     """Test different logging levels."""
     # Create a StringIO handler to capture output
     output = StringIO()
@@ -100,29 +102,30 @@ def test_logger_levels():
         assert f"{level_prefix} {msg}" in log_output
 
 
-def test_logger_formatting():
+def test_logger_formatting() -> None:
     """Test log message formatting."""
     logger = setup_logger(name="test", use_tqdm=False)
     handler = logger.handlers[0]
 
     # Test console format
     assert isinstance(handler.formatter, logging.Formatter)
-    assert handler.formatter._fmt == "%(levelname)s: %(message)s"
+    formatter = handler.formatter
+    if formatter is not None:  # Add check for None to satisfy mypy
+        assert formatter._fmt == "%(levelname)s: %(message)s"
 
     # Test file format
     with tempfile.NamedTemporaryFile(delete=False) as temp:
         try:
             logger = setup_logger(name="test", log_file=temp.name)
             file_handler = next(h for h in logger.handlers if isinstance(h, logging.FileHandler))
-            assert (
-                file_handler.formatter._fmt
-                == "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
+            file_formatter: Optional[Formatter] = file_handler.formatter
+            if file_formatter is not None:
+                assert file_formatter._fmt == "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         finally:
             os.unlink(temp.name)
 
 
-def test_logger_handler_cleanup():
+def test_logger_handler_cleanup() -> None:
     """Test that logger handlers are properly cleaned up."""
     name = "test_cleanup"
     logger = logging.getLogger(name)

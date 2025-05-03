@@ -4,6 +4,8 @@ import logging
 import os
 import sys
 from io import StringIO
+from pathlib import Path
+from typing import List, Tuple
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,7 +15,7 @@ from compute_pi.logger import TqdmLoggingHandler
 from compute_pi.main import create_progress_bar, is_non_interactive, main
 
 
-def test_create_progress_bar():
+def test_create_progress_bar() -> None:
     """Test progress bar creation."""
     pbar = create_progress_bar(100)
     assert isinstance(pbar, tqdm)
@@ -23,7 +25,7 @@ def test_create_progress_bar():
     pbar.close()
 
 
-def test_is_non_interactive():
+def test_is_non_interactive() -> None:
     """Test non-interactive environment detection."""
     with patch("sys.stdout.isatty", return_value=False):
         assert is_non_interactive()
@@ -50,7 +52,7 @@ def test_is_non_interactive():
         (["--precision", "100", "--plain"], 0),  # Test plain output
     ],
 )
-def test_main_with_args(args, expected_code):
+def test_main_with_args(args: List[str], expected_code: int) -> None:
     """Test main function with various command line arguments."""
     with patch.object(sys, "argv", ["compute_pi"] + args):
         with patch("sys.stdout", new=StringIO()) as stdout:
@@ -79,9 +81,9 @@ def test_main_with_args(args, expected_code):
                         )
 
 
-def test_main_with_logging():
+def test_main_with_logging() -> None:
     """Test main function with different logging configurations."""
-    test_cases = [
+    test_cases: List[Tuple[List[str], int]] = [
         (["--verbose"], logging.DEBUG),
         ([], logging.INFO),
     ]
@@ -97,7 +99,7 @@ def test_main_with_logging():
                         assert call_args["level"] == expected_level
 
 
-def test_main_with_file_logging(tmp_path):
+def test_main_with_file_logging(tmp_path: Path) -> None:
     """Test main function with file logging."""
     log_file = tmp_path / "test.log"
     args = ["--log-file", str(log_file)]
@@ -112,7 +114,7 @@ def test_main_with_file_logging(tmp_path):
                 assert "Starting π computation" in log_content
 
 
-def test_main_keyboard_interrupt():
+def test_main_keyboard_interrupt() -> None:
     """Test main function handles keyboard interrupt."""
     with patch.object(sys, "argv", ["compute_pi"]):
         with patch("compute_pi.PiCalculator.compute_pi", side_effect=KeyboardInterrupt):
@@ -127,7 +129,7 @@ def test_main_keyboard_interrupt():
                     assert "interrupted by user" in error_output.lower()
 
 
-def test_main_unexpected_error():
+def test_main_unexpected_error() -> None:
     """Test main function handles unexpected errors."""
     with patch("compute_pi.main.PiCalculator") as mock_calc:
         mock_calc.side_effect = Exception("Unexpected test error")
@@ -143,7 +145,7 @@ def test_main_unexpected_error():
                     assert "Unexpected error:" in error_output
 
 
-def test_progress_display():
+def test_progress_display() -> None:
     """Test progress display functionality."""
     with patch("compute_pi.main.create_progress_bar") as mock_create_bar, patch(
         "compute_pi.main.is_non_interactive", return_value=False
@@ -159,7 +161,7 @@ def test_progress_display():
                 assert mock_pbar.refresh.called
 
 
-def test_tqdm_logging_handler():
+def test_tqdm_logging_handler() -> None:
     """Test TqdmLoggingHandler functionality."""
     handler = TqdmLoggingHandler()
     with patch("tqdm.auto.tqdm.write") as mock_write:
@@ -177,7 +179,7 @@ def test_tqdm_logging_handler():
         assert "Test message" in mock_write.call_args[0][0]
 
 
-def test_cli_entrypoint(tmp_path):
+def test_cli_entrypoint(tmp_path: Path) -> None:
     """Test the compute-pi CLI entrypoint via subprocess."""
     import subprocess
 

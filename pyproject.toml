@@ -51,6 +51,11 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 
+# Ignore missing imports for libraries without type annotations
+[[tool.mypy.overrides]]
+module = "mpmath.*"
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 addopts = "--cov=compute_pi --cov-report=term-missing --cov-report=xml -v"
 testpaths = ["tests"]
