@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 
-FROM python:3.9-alpine AS builder
+FROM python:3.9-alpine AS base
 WORKDIR /app
 
 # Add metadata labels
@@ -23,9 +23,6 @@ RUN apk add --no-cache \
 COPY pyproject.toml README.md ./
 COPY compute_pi ./compute_pi
 
-# Build the wheel
-RUN export PATH=/root/.cargo/bin:$PATH && uv pip wheel --system --wheel-dir=/app/wheels -e .
-
 FROM python:3.9-alpine AS dev
 WORKDIR /app
 
@@ -35,14 +32,14 @@ RUN apk add --no-cache libffi curl \
     && cp /root/.local/bin/uv /usr/local/bin/uv
 
 # Copy project files
-COPY --from=builder /app /app
+COPY --from=base /app /app
 COPY tests ./tests
 COPY benchmarks ./benchmarks
 
-# Install from wheel with dev dependencies
-RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system --upgrade pip && \
-    uv pip install --system --find-links=/app/wheels ".[dev]" && \
-    pytest tests/
+# Install dev dependencies from source
+RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system -e ".[dev]"
+RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system pytest
+RUN pytest tests/
 
 FROM python:3.9-alpine AS prod
 WORKDIR /app
@@ -57,11 +54,11 @@ RUN apk add --no-cache libffi curl \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && cp /root/.local/bin/uv /usr/local/bin/uv
 
-# Copy only the wheel and install
-COPY --from=builder /app/wheels /wheels
-RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system --upgrade pip && \
-    uv pip install --system --no-index --find-links=/wheels compute-pi && \
-    rm -rf /wheels
+# Copy only the necessary files
+COPY --from=base /app /app
+
+# Install production dependencies from source
+RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system -e .
 
 # Set Python to run in unbuffered mode (recommended for containers)
 ENV PYTHONUNBUFFERED=1
