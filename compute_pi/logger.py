@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Optional, Union, cast
+from typing import Optional, Union
 
 from tqdm.auto import tqdm
 
