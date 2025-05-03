@@ -14,7 +14,11 @@ from .logger import logger, setup_logger
 
 def is_non_interactive() -> bool:
     """Check if we're running in a non-interactive environment."""
-    return not sys.stdout.isatty() or os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
+    return (
+        not sys.stdout.isatty()
+        or os.path.exists("/.dockerenv")
+        or os.environ.get("DOCKER_CONTAINER") == "true"
+    )
 
 
 def create_progress_bar(total: int) -> tqdm:
@@ -24,7 +28,7 @@ def create_progress_bar(total: int) -> tqdm:
         desc="Computing π",
         unit="%",
         ncols=80,
-        bar_format="{l_bar}{bar}| {n_fmt}%/{total_fmt}% [{elapsed}<{remaining}]"
+        bar_format="{l_bar}{bar}| {n_fmt}%/{total_fmt}% [{elapsed}<{remaining}]",
     )
 
 
@@ -41,36 +45,23 @@ def main() -> int:
         description="Calculate π to a specified precision using the Chudnovsky algorithm"
     )
     parser.add_argument(
-        "-p", "--precision",
+        "-p",
+        "--precision",
         type=int,
         default=1000,
-        help="Number of decimal places to compute (default: 1000)"
+        help="Number of decimal places to compute (default: 1000)",
     )
-    parser.add_argument(
-        "--no-progress",
-        action="store_true",
-        help="Disable progress bar"
-    )
+    parser.add_argument("--no-progress", action="store_true", help="Disable progress bar")
     parser.add_argument(
         "--show-digits",
         type=int,
         default=100,
-        help="Number of digits to display in output (default: 100)"
+        help="Number of digits to display in output (default: 100)",
     )
+    parser.add_argument("--log-file", type=str, help="Log file path (optional)")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument(
-        "--log-file",
-        type=str,
-        help="Log file path (optional)"
-    )
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Enable verbose output"
-    )
-    parser.add_argument(
-        "--plain",
-        action="store_true",
-        help="Force plain text output without terminal formatting"
+        "--plain", action="store_true", help="Force plain text output without terminal formatting"
     )
 
     args = parser.parse_args()
@@ -81,11 +72,11 @@ def main() -> int:
         setup_logger(
             level=log_level,
             log_file=args.log_file,
-            use_tqdm=not args.no_progress and not is_non_interactive()
+            use_tqdm=not args.no_progress and not is_non_interactive(),
         )
 
         calculator = PiCalculator(precision=args.precision)
-        
+
         # Disable progress bar in non-interactive environments or if requested
         if args.no_progress or is_non_interactive():
             result = calculator.compute_pi()
@@ -97,8 +88,8 @@ def main() -> int:
 
         # Set DOCKER_CONTAINER environment variable if --plain is used
         if args.plain:
-            os.environ['DOCKER_CONTAINER'] = 'true'
-            
+            os.environ["DOCKER_CONTAINER"] = "true"
+
         print(calculator.format_result(result, show_digits=args.show_digits))
         return 0
 

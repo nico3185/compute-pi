@@ -8,11 +8,11 @@ from tqdm.auto import tqdm
 
 class TqdmLoggingHandler(logging.Handler):
     """Logging handler that writes through tqdm to preserve progress bars."""
-    
+
     def emit(self, record: logging.LogRecord) -> None:
         """
         Emit a log message through tqdm.write().
-        
+
         Args:
             record: The log record to emit
         """
@@ -44,17 +44,13 @@ def setup_logger(
     """
     logger = logging.getLogger(name)
     logger.setLevel(level)
-    
+
     # Remove any existing handlers
     logger.handlers = []
 
     # Create formatters
-    console_formatter = logging.Formatter(
-        '%(levelname)s: %(message)s'
-    )
-    file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    console_formatter = logging.Formatter("%(levelname)s: %(message)s")
+    file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Console handler (using tqdm if requested)
     if use_tqdm:
@@ -79,4 +75,4 @@ def setup_logger(
 
 
 # Create a default logger instance
-logger = setup_logger() 
+logger = setup_logger()
