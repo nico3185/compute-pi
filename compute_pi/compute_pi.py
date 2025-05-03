@@ -1,5 +1,7 @@
 """Module for high-precision calculation of π using the Chudnovsky algorithm."""
 
+import os
+import sys
 from typing import Optional
 from mpmath import mp
 from time import time
@@ -16,6 +18,10 @@ class PiComputationResult:
     precision: int
     correct_digits: int
     debug_info: dict
+
+    def __str__(self) -> str:
+        """Return a string representation of the result."""
+        return str(self.value)
 
 
 class PiCalculator:
@@ -175,10 +181,30 @@ class PiCalculator:
         Returns:
             Formatted string with computation results
         """
+        # Detect if we're in a Docker or non-interactive environment
+        is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
+        is_non_interactive = not sys.stdout.isatty() or is_docker
+        
+        # Format the π value string
         pi_str = str(result.value)[:show_digits + 2]  # +2 for "3."
-        debug_str = "\nDebug Information:\n" + "\n".join(f"{k}: {v}" for k, v in result.debug_info.items())
+        
+        # Basic information that's always included
+        info = [
+            f"Value (first {show_digits} digits): {pi_str}",
+            f"Computation time: {result.computation_time:.2f} seconds",
+            f"Requested precision: {result.precision} digits",
+            f"Correct digits: {result.correct_digits}"
+        ]
+        
+        # Add debug information if available
+        if result.debug_info:
+            info.append("\nDebug Information:")
+            info.extend(f"{k}: {v}" for k, v in result.debug_info.items())
+        
+        # Use plain formatting for Docker/non-interactive environments
+        if is_non_interactive:
+            return "π Computation Results:\n" + "\n".join(info)
+        
+        # Use fancy formatting for interactive terminals
         return f"""π Computation Results:
-Value (first {show_digits} digits): {pi_str}
-Computation time: {result.computation_time:.2f} seconds
-Requested precision: {result.precision} digits
-Correct digits: {result.correct_digits}{debug_str}"""
+{chr(9492) + chr(9472) * 2} """ + f"\n{chr(9474)}  ".join(info)

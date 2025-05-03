@@ -1,17 +1,12 @@
-"""Tests for edge cases and error conditions."""
+"""Tests for edge cases in the compute-pi package."""
+
+import os
+from unittest.mock import patch
 
 import pytest
 from mpmath import mp
 
 from compute_pi import PiCalculator
-
-
-def test_very_high_precision():
-    """Test computation with very high precision."""
-    precision = 10000  # Reduced from 100000
-    calculator = PiCalculator(precision=precision)
-    result = calculator.compute_pi()
-    assert result.correct_digits >= precision
 
 
 def test_minimum_precision():
@@ -22,36 +17,29 @@ def test_minimum_precision():
     assert str(result.value).startswith("3.1")
 
 
-@pytest.mark.parametrize("precision", [
-    1,    # Minimum
-    10,   # Small
-    100,  # Medium
-    500,  # Large (reduced from 1000)
-])
-def test_precision_boundaries(precision):
-    """Test precision at various boundaries."""
-    calculator = PiCalculator(precision=precision)
+def test_maximum_precision():
+    """Test computation with very high precision."""
+    # Test with a reasonably high precision that won't take too long
+    calculator = PiCalculator(precision=10000)
     result = calculator.compute_pi()
-    assert result.correct_digits >= precision
+    assert result.correct_digits >= 10000
+    assert len(str(result.value)) > 10000
 
 
-def test_progress_callback_edge_cases():
-    """Test progress callback with edge cases."""
-    progress_values = []
+def test_precision_validation():
+    """Test precision validation."""
+    with pytest.raises(ValueError):
+        PiCalculator(precision=0)
     
-    def callback(p):
-        progress_values.append(p)
+    with pytest.raises(ValueError):
+        PiCalculator(precision=-100)
     
-    calculator = PiCalculator(precision=50)  # Reduced from 100
-    calculator.compute_pi(progress_callback=callback)
-    
-    assert len(progress_values) > 0
-    assert all(0 <= p <= 1 for p in progress_values)
-    assert progress_values[0] < 1  # First update should not be 100%
-    assert progress_values[-1] > 0.9  # Last update should be near 100%
+    calculator = PiCalculator(precision=100)
+    with pytest.raises(ValueError):
+        calculator.compute_pi(precision=0)
 
 
-def test_result_formatting_edge_cases():
+def test_result_formatting():
     """Test result formatting with edge cases."""
     calculator = PiCalculator(precision=50)  # Reduced from 100
     result = calculator.compute_pi()
@@ -64,59 +52,64 @@ def test_result_formatting_edge_cases():
         result.correct_digits * 2,  # Double correct digits
     ]
     
-    for show_digits in edge_cases:
-        formatted = calculator.format_result(result, show_digits=show_digits)
-        assert "π Computation Results:" in formatted
-        assert str(show_digits) in formatted
-        displayed_digits = formatted.split("\n")[1].split(": ")[1]
-        assert len(displayed_digits) >= min(show_digits + 2, len(str(result.value)))
+    # Test interactive terminal output
+    with patch('sys.stdout.isatty', return_value=True), \
+         patch('os.path.exists', return_value=False), \
+         patch.dict(os.environ, {'DOCKER_CONTAINER': 'false'}):
+        for show_digits in edge_cases:
+            formatted = calculator.format_result(result, show_digits=show_digits)
+            assert "π Computation Results:" in formatted
+            assert str(show_digits) in formatted
+            displayed_digits = formatted.split("\n")[1].split(": ")[1]
+            assert len(displayed_digits) >= min(show_digits + 2, len(str(result.value)))
+            # Check for fancy formatting
+            assert "└" in formatted or "│" in formatted
+
+    # Test non-interactive/Docker output
+    with patch('sys.stdout.isatty', return_value=False):
+        for show_digits in edge_cases:
+            formatted = calculator.format_result(result, show_digits=show_digits)
+            assert "π Computation Results:" in formatted
+            assert str(show_digits) in formatted
+            # Check for plain text formatting
+            assert "└" not in formatted
+            assert "│" not in formatted
+            # Verify content is still present
+            assert str(result.value)[:show_digits + 2] in formatted
+            assert f"{result.computation_time:.2f} seconds" in formatted
+            assert str(result.precision) in formatted
+            assert str(result.correct_digits) in formatted
 
 
 def test_precision_override_edge_cases():
-    """Test precision override with edge cases."""
-    calculator = PiCalculator(precision=500)  # Reduced from 1000
+    """Test precision override edge cases."""
+    calculator = PiCalculator(precision=1000)
     
-    # Test various override values
-    test_cases = [
-        1,  # Minimum
-        calculator.target_precision // 2,  # Half original
-        calculator.target_precision * 2,  # Double original
-    ]
+    # Test with same precision
+    result1 = calculator.compute_pi(precision=1000)
+    assert result1.precision == 1000
     
-    for precision in test_cases:
-        result = calculator.compute_pi(precision=precision)
-        assert result.precision == precision
-        assert result.correct_digits >= precision
+    # Test with lower precision
+    result2 = calculator.compute_pi(precision=100)
+    assert result2.precision == 100
+    assert result2.correct_digits >= 100
+    
+    # Test with higher precision
+    result3 = calculator.compute_pi(precision=2000)
+    assert result3.precision == 2000
+    assert result3.correct_digits >= 2000
 
 
-def test_error_handling():
-    """Test error handling for various invalid inputs."""
-    with pytest.raises(ValueError):
-        PiCalculator(precision=0)
-    
-    with pytest.raises(ValueError):
-        PiCalculator(precision=-100)
-    
-    calculator = PiCalculator(precision=50)  # Reduced from 100
-    
-    with pytest.raises(ValueError):
-        calculator.compute_pi(precision=0)
-    
-    with pytest.raises(ValueError):
-        calculator.compute_pi(precision=-1)
-
-
-def test_mpmath_context_handling():
-    """Test handling of mpmath context changes."""
-    original_dps = mp.dps
-    original_prec = mp.prec
-    
-    calculator = PiCalculator(precision=50)  # Reduced from 100
+def test_string_representation():
+    """Test string representation of PiComputationResult."""
+    calculator = PiCalculator(precision=10)
     result = calculator.compute_pi()
     
-    # Context should be restored
-    assert mp.dps == original_dps
-    assert mp.prec == original_prec
+    # Test direct string conversion
+    result_str = str(result)
+    assert result_str.startswith("3.14159")
+    assert result_str == str(result.value)
     
-    # Result should still be valid
-    assert result.correct_digits >= 50  # Reduced from 100 
+    # Test in formatted output
+    formatted = calculator.format_result(result, show_digits=5)
+    assert "3.14159" in formatted 

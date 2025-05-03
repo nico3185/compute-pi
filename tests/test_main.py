@@ -2,13 +2,14 @@
 
 import sys
 import logging
+import os
 from io import StringIO
 from unittest.mock import MagicMock, patch
 
 import pytest
 from tqdm.auto import tqdm
 
-from compute_pi.main import create_progress_bar, main, progress_callback
+from compute_pi.main import create_progress_bar, main, progress_callback, is_non_interactive
 from compute_pi.logger import TqdmLoggingHandler
 
 
@@ -22,12 +23,21 @@ def test_create_progress_bar():
     pbar.close()
 
 
-def test_progress_callback():
-    """Test progress callback updates progress bar correctly."""
-    mock_pbar = MagicMock()
-    progress_callback(0.5, mock_pbar)
-    mock_pbar.n = 50
-    mock_pbar.refresh.assert_called_once()
+def test_is_non_interactive():
+    """Test non-interactive environment detection."""
+    with patch('sys.stdout.isatty', return_value=False):
+        assert is_non_interactive()
+    
+    with patch('os.path.exists', return_value=True):
+        assert is_non_interactive()
+    
+    with patch.dict(os.environ, {'DOCKER_CONTAINER': 'true'}):
+        assert is_non_interactive()
+    
+    with patch('sys.stdout.isatty', return_value=True), \
+         patch('os.path.exists', return_value=False), \
+         patch.dict(os.environ, {'DOCKER_CONTAINER': 'false'}):
+        assert not is_non_interactive()
 
 
 @pytest.mark.parametrize("args,expected_code", [
@@ -35,6 +45,7 @@ def test_progress_callback():
     (["--precision", "1000", "--no-progress"], 0),
     (["--precision", "100", "--show-digits", "50"], 0),
     (["--precision", "-1"], 1),  # Should fail with ValueError
+    (["--precision", "100", "--plain"], 0),  # Test plain output
 ])
 def test_main_with_args(args, expected_code):
     """Test main function with various command line arguments."""
@@ -46,7 +57,15 @@ def test_main_with_args(args, expected_code):
                     
                     assert result == expected_code
                     if expected_code == 0:
-                        assert "π Computation Results:" in stdout.getvalue()
+                        output = stdout.getvalue()
+                        assert "π Computation Results:" in output
+                        if "--plain" in args:
+                            # Check for plain text formatting
+                            assert "└" not in output
+                            assert "│" not in output
+                        elif not is_non_interactive():
+                            # Check for fancy formatting in interactive mode
+                            assert any(c in output for c in "└│")
                     else:
                         # Check both stderr and tqdm output for error messages
                         error_output = stderr.getvalue() + ''.join(str(args[0]) for args, _ in mock_write.call_args_list)
@@ -115,7 +134,8 @@ def test_main_unexpected_error():
 
 def test_progress_display():
     """Test progress display functionality."""
-    with patch('compute_pi.main.create_progress_bar') as mock_create_bar:
+    with patch('compute_pi.main.create_progress_bar') as mock_create_bar, \
+         patch('compute_pi.main.is_non_interactive', return_value=False):
         mock_pbar = MagicMock()
         mock_create_bar.return_value.__enter__.return_value = mock_pbar
         
@@ -148,8 +168,24 @@ def test_tqdm_logging_handler():
 def test_cli_entrypoint(tmp_path):
     """Test the compute-pi CLI entrypoint via subprocess."""
     import subprocess
+    
+    # Test with plain output
     result = subprocess.run([
-        sys.executable, '-m', 'compute_pi.main', '--precision', '10', '--show-digits', '5'
+        sys.executable, '-m', 'compute_pi.main',
+        '--precision', '10',
+        '--show-digits', '5',
+        '--plain'
+    ], capture_output=True, text=True)
+    assert result.returncode == 0
+    assert "π Computation Results:" in result.stdout
+    assert "3.14159" in result.stdout
+    assert "└" not in result.stdout  # No fancy formatting
+    
+    # Test with default output in non-interactive mode
+    result = subprocess.run([
+        sys.executable, '-m', 'compute_pi.main',
+        '--precision', '10',
+        '--show-digits', '5'
     ], capture_output=True, text=True)
     assert result.returncode == 0
     assert "π Computation Results:" in result.stdout

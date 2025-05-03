@@ -1,6 +1,7 @@
 """Command-line interface for π calculation."""
 
 import argparse
+import os
 import sys
 from typing import Optional
 import logging
@@ -9,6 +10,11 @@ from tqdm.auto import tqdm
 
 from compute_pi import PiCalculator
 from .logger import logger, setup_logger
+
+
+def is_non_interactive() -> bool:
+    """Check if we're running in a non-interactive environment."""
+    return not sys.stdout.isatty() or os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
 
 
 def create_progress_bar(total: int) -> tqdm:
@@ -23,7 +29,7 @@ def create_progress_bar(total: int) -> tqdm:
 
 
 def progress_callback(progress: float, pbar: Optional[tqdm] = None) -> None:
-    """Update progress bar with current progress."""
+    """Update progress bar if available."""
     if pbar:
         pbar.n = int(progress * 100)
         pbar.refresh()
@@ -61,6 +67,11 @@ def main() -> int:
         action="store_true",
         help="Enable verbose output"
     )
+    parser.add_argument(
+        "--plain",
+        action="store_true",
+        help="Force plain text output without terminal formatting"
+    )
 
     args = parser.parse_args()
 
@@ -70,12 +81,13 @@ def main() -> int:
         setup_logger(
             level=log_level,
             log_file=args.log_file,
-            use_tqdm=not args.no_progress
+            use_tqdm=not args.no_progress and not is_non_interactive()
         )
 
         calculator = PiCalculator(precision=args.precision)
         
-        if args.no_progress:
+        # Disable progress bar in non-interactive environments or if requested
+        if args.no_progress or is_non_interactive():
             result = calculator.compute_pi()
         else:
             with create_progress_bar(100) as pbar:
@@ -83,6 +95,10 @@ def main() -> int:
                     progress_callback=lambda p: progress_callback(p, pbar)
                 )
 
+        # Set DOCKER_CONTAINER environment variable if --plain is used
+        if args.plain:
+            os.environ['DOCKER_CONTAINER'] = 'true'
+            
         print(calculator.format_result(result, show_digits=args.show_digits))
         return 0
 
