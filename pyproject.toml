@@ -56,6 +56,11 @@ warn_unreachable = true
 module = "mpmath.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "benchmarks.*"
+disallow_untyped_defs = true
+check_untyped_defs = true
+
 [tool.pytest.ini_options]
 addopts = "--cov=compute_pi --cov-report=term-missing --cov-report=xml -v"
 testpaths = ["tests"]

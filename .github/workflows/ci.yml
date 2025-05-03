@@ -29,6 +29,7 @@ jobs:
     - name: Install dependencies
       run: |
         uv pip install --system -e ".[dev]"
+        uv pip install --system types-tqdm types-psutil
         
     - name: Check formatting with black
       run: black . --check
