@@ -26,8 +26,14 @@ COPY compute_pi ./compute_pi
 FROM python:3.9-alpine AS dev
 WORKDIR /app
 
-# Install runtime dependencies and uv
-RUN apk add --no-cache libffi curl \
+# Install build and runtime dependencies and uv
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    python3-dev \
+    libffi-dev \
+    openssl-dev \
+    curl \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && cp /root/.local/bin/uv /usr/local/bin/uv
 
@@ -40,6 +46,9 @@ COPY benchmarks ./benchmarks
 RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system -e ".[dev]"
 RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system pytest
 RUN pytest tests/
+
+# Optionally remove build dependencies to slim the image
+RUN apk del gcc musl-dev python3-dev libffi-dev openssl-dev
 
 FROM python:3.9-alpine AS prod
 WORKDIR /app
