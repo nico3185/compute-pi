@@ -67,10 +67,10 @@ docker-build:
 	docker compose build
 
 docker-test:
-	docker compose run --rm test
+	docker compose run -T --rm test
 
 docker-run:
-	docker compose run --rm app
+	docker compose run -T --rm app
 
 # Default target
 all: help 
