@@ -49,8 +49,14 @@ LABEL org.opencontainers.image.source=https://github.com/nico3185/compute-pi
 LABEL org.opencontainers.image.description="High-precision π calculator using the Chudnovsky algorithm"
 LABEL org.opencontainers.image.licenses=MIT
 
-# Install runtime dependencies and uv
-RUN apk add --no-cache libffi curl \
+# Install build and runtime dependencies and uv
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    python3-dev \
+    libffi-dev \
+    openssl-dev \
+    curl \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && cp /root/.local/bin/uv /usr/local/bin/uv
 
@@ -59,6 +65,9 @@ COPY --from=base /app /app
 
 # Install production dependencies from source
 RUN export PATH=/root/.cargo/bin:$PATH && uv pip install --system -e .
+
+# Optionally remove build dependencies to slim the image
+RUN apk del gcc musl-dev python3-dev libffi-dev openssl-dev
 
 # Set Python to run in unbuffered mode (recommended for containers)
 ENV PYTHONUNBUFFERED=1
