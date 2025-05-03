@@ -21,8 +21,14 @@ pip install compute-pi
 ### Using Docker
 
 ```bash
-docker pull compute-pi
-docker run compute-pi --precision 1000
+# Pull from GitHub Container Registry
+docker pull ghcr.io/nico3185/compute-pi:latest
+
+# Run container with default settings (precision 1000)
+docker run ghcr.io/nico3185/compute-pi:latest
+
+# Run with custom precision
+docker run ghcr.io/nico3185/compute-pi:latest --precision 5000 --show-digits 100
 ```
 
 ### From Source
@@ -90,11 +96,21 @@ pytest tests/ --benchmark-only
 ### Docker Development
 
 ```bash
-# Build image
-docker build -t compute-pi .
+# Build image locally
+docker compose build
 
 # Run tests in container
-docker run compute-pi python -m pytest tests/
+docker compose run --rm dev
+
+# Run application with default settings
+docker compose run --rm app
+
+# Run with custom parameters
+docker compose run --rm app compute-pi --precision 2000 --show-digits 100
+
+# Use prebuilt development image
+docker pull ghcr.io/nico3185/compute-pi:dev
+docker run --rm ghcr.io/nico3185/compute-pi:dev pytest
 ```
 
 ## License
