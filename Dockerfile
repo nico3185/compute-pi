@@ -3,6 +3,11 @@
 FROM python:3.9-slim AS base
 WORKDIR /app
 
+# Add metadata labels
+LABEL org.opencontainers.image.source=https://github.com/nico3185/compute-pi
+LABEL org.opencontainers.image.description="High-precision π calculator using the Chudnovsky algorithm"
+LABEL org.opencontainers.image.licenses=MIT
+
 # Copy only the necessary files
 COPY pyproject.toml README.md ./
 COPY compute_pi ./compute_pi
