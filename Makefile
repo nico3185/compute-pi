@@ -12,7 +12,7 @@ help:
 	@echo "  make clean          - Clean up build artifacts and caches"
 	@echo "  make lint           - Run all linters"
 	@echo "  make format         - Format code with black and isort"
-	@echo "  make check          - Run all checks (format, lint, mypy)"
+	@echo "  make check          - Run all CI/CD checks (format, lint, tests, coverage)"
 	@echo "  make test           - Run tests"
 	@echo "  make coverage       - Run tests with coverage report"
 	@echo "  make run            - Run the application"
@@ -35,10 +35,10 @@ clean:
 lint: lint-flake8 lint-mypy
 
 lint-flake8:
-	flake8 $(PACKAGE_NAME) tests
+	flake8 $(PACKAGE_NAME) tests benchmarks
 
 lint-mypy:
-	mypy $(PACKAGE_NAME) tests
+	mypy .
 
 format:
 	black .
@@ -48,7 +48,7 @@ format-check:
 	black --check .
 	isort --check-only .
 
-check: format-check lint
+check: format lint test coverage
 
 test:
 	pytest -v
