@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1.4
+
+FROM python:3.9-alpine
+
+WORKDIR /app
+
+# Install required packages
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    python3-dev \
+    libffi-dev \
+    openssl-dev \
+    make \
+    && pip install --no-cache-dir --upgrade pip wheel
+
+# Install dev tools
+RUN pip install --no-cache-dir \
+    black \
+    isort \
+    flake8 \
+    mypy \
+    pytest \
+    pytest-cov \
+    pytest-benchmark \
+    types-tqdm \
+    types-psutil
+
+# Copy project files
+COPY . .
+
+# Run make check by default
+CMD ["make", "check"] 

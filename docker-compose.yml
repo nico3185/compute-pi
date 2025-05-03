@@ -21,4 +21,16 @@ services:
       - .:/app
     command: pytest -v
     environment:
+      - PYTHONUNBUFFERED=1
+      
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    image: compute-pi:test
+    container_name: compute-pi-test
+    volumes:
+      - .:/app
+    command: make check
+    environment:
       - PYTHONUNBUFFERED=1 

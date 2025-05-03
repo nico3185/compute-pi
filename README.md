@@ -108,6 +108,9 @@ docker compose run --rm app
 # Run with custom parameters
 docker compose run --rm app compute-pi --precision 2000 --show-digits 100
 
+# Run all checks (formatting, linting, testing, coverage)
+docker compose run --rm test
+
 # Use prebuilt development image
 docker pull ghcr.io/nico3185/compute-pi:dev
 docker run --rm ghcr.io/nico3185/compute-pi:dev pytest
