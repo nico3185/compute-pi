@@ -14,26 +14,46 @@ RUN apk add --no-cache \
     make \
     curl \
     && pip install --no-cache-dir --upgrade pip wheel \
-    && curl -LsSf https://astral.sh/uv/install.sh | sh
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.profile \
+    && source ~/.profile
 
 # Copy configuration files first
 COPY pyproject.toml README.md .flake8 ./
 COPY compute_pi ./compute_pi
 
 # Install the package and its dependencies
-RUN uv pip install -e .
+# Use pip as fallback since uv might not be in PATH in some environments
+RUN if command -v uv >/dev/null 2>&1; then \
+        uv pip install -e .; \
+    else \
+        pip install -e .; \
+    fi
 
 # Install dev tools
-RUN uv pip install \
-    black \
-    isort \
-    flake8 \
-    mypy \
-    pytest \
-    pytest-cov \
-    pytest-benchmark \
-    types-tqdm \
-    types-psutil
+RUN if command -v uv >/dev/null 2>&1; then \
+        uv pip install \
+            black \
+            isort \
+            flake8 \
+            mypy \
+            pytest \
+            pytest-cov \
+            pytest-benchmark \
+            types-tqdm \
+            types-psutil; \
+    else \
+        pip install --no-cache-dir \
+            black \
+            isort \
+            flake8 \
+            mypy \
+            pytest \
+            pytest-cov \
+            pytest-benchmark \
+            types-tqdm \
+            types-psutil; \
+    fi
 
 # Copy the rest of the project files
 COPY tests ./tests
