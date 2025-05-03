@@ -4,7 +4,7 @@ FROM python:3.9-alpine
 
 WORKDIR /app
 
-# Install required packages
+# Install required packages and uv
 RUN apk add --no-cache \
     gcc \
     musl-dev \
@@ -12,17 +12,19 @@ RUN apk add --no-cache \
     libffi-dev \
     openssl-dev \
     make \
-    && pip install --no-cache-dir --upgrade pip wheel
+    curl \
+    && pip install --no-cache-dir --upgrade pip wheel \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Copy configuration files first
 COPY pyproject.toml README.md .flake8 ./
 COPY compute_pi ./compute_pi
 
 # Install the package and its dependencies
-RUN pip install --no-cache-dir -e .
+RUN uv pip install -e .
 
 # Install dev tools
-RUN pip install --no-cache-dir \
+RUN uv pip install \
     black \
     isort \
     flake8 \

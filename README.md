@@ -12,7 +12,17 @@ A high-precision π calculator using the Chudnovsky algorithm.
 
 ## Installation
 
-### Using pip
+### Using uv (Recommended)
+
+```bash
+# Install uv if you don't have it
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install the package
+uv pip install compute-pi
+```
+
+### Using pip (Alternative)
 
 ```bash
 pip install compute-pi
@@ -36,7 +46,12 @@ docker run ghcr.io/nico3185/compute-pi:latest --precision 5000 --show-digits 100
 ```bash
 git clone https://github.com/yourusername/compute-pi.git
 cd compute-pi
-pip install -e .
+
+# Using uv (recommended)
+uv pip install -e .
+
+# Using pip (alternative)
+# pip install -e .
 ```
 
 ## Usage
@@ -80,8 +95,11 @@ print(calculator.format_result(result))
 ### Setup Development Environment
 
 ```bash
+# Install uv if you don't have it
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Install development dependencies
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 
 # Run tests
 pytest tests/
@@ -91,6 +109,22 @@ pytest tests/ --cov=compute_pi
 
 # Run benchmarks
 pytest tests/ --benchmark-only
+```
+
+### Using Make
+
+```bash
+# Install project and dependencies with uv
+make install      # Install production dependencies
+make install-dev  # Install development dependencies
+
+# Development commands
+make format       # Format code with black and isort
+make lint         # Run linters (flake8, mypy)
+make test         # Run tests
+make coverage     # Run tests with coverage report
+make check        # Run all checks (format, lint, tests, coverage)
+make run          # Run the application
 ```
 
 ### Docker Development
